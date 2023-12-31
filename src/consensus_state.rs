@@ -75,7 +75,6 @@ impl ConsensusState {
         &self.current_leader
     }
 
-    // Additional methods related to consensus state management can be added here.
 }
 
 #[cfg(test)]
