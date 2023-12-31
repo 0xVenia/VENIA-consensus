@@ -100,6 +100,61 @@ impl BlockProposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Unit tests for BlockProposal module
-    // ...
+    use blockchain_types::{Transaction, PublicKey, BlockHeader};
+
+    /// Mocks necessary data for testing purposes
+    fn setup() -> (BlockProposal, Vec<Transaction>, Validator) {
+        let stake_manager = StakeManager::new(); // Assuming a new method for instantiation
+        let transaction_verifier = TransactionVerifier::new(); // Assuming a new method
+        let consensus_state = ConsensusState::new(); // Assuming a new method
+
+        let block_proposal = BlockProposal::new(stake_manager, transaction_verifier, consensus_state);
+
+        let transactions = vec![
+            Transaction::new(/* transaction data */),
+            // ... more transactions
+        ];
+
+        let validator = Validator {
+            public_key: PublicKey::new(/* public key data */),
+            // ... other validator properties
+        };
+
+        (block_proposal, transactions, validator)
+    }
+
+    #[test]
+    fn test_prepare_empty_block() {
+        let (block_proposal, _, validator) = setup();
+        let block = block_proposal.prepare_empty_block(&validator);
+
+        assert_eq!(block.transactions.len(), 0, "Block should have no transactions.");
+        assert_eq!(block.header.validator_public_key, validator.public_key, "Block header should have the validator's public key.");
+        // ... more assertions
+    }
+
+    #[test]
+    fn test_propose_block_with_valid_transactions() {
+        let (block_proposal, transactions, validator) = setup();
+        let block = block_proposal.propose_block(transactions, &validator);
+
+        // Assuming all transactions are valid
+        assert!(!block.transactions.is_empty(), "Block should contain transactions.");
+        // ... more assertions
+    }
+
+    #[test]
+    fn test_calculate_validator_reward() {
+        let (block_proposal, _, _) = setup();
+        let stake_snapshot = StakeSnapshot::new(/* snapshot data */);
+        let block = Block::new(BlockHeader::new(/* header data */), vec![]);
+
+        let reward = block_proposal.calculate_validator_reward(&stake_snapshot, &block);
+        
+        assert!(reward > 0, "Validator should receive a reward.");
+        // ... more assertions based on the expected reward calculation logic
+    }
+
+    // Additional tests can be added to cover other aspects of the BlockProposal module
 }
+
