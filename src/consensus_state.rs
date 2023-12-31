@@ -1,92 +1,88 @@
 // consensus_state.rs
-// Manages and maintains the state of the consensus process in the VENIA blockchain.
+// Manages the state of the consensus process in the VENIA blockchain.
 
 use std::collections::HashMap;
 use crate::stake_manager::StakeManager;
 use crate::validator_set::ValidatorSet;
-use crate::block_proposal::Block;
-use crate::utilities::crypto_utils;
+use crate::block_proposal::BlockProposal;
+use serde::{Serialize, Deserialize};
 
-/// Represents the consensus state of the blockchain at any given point.
+/// Represents the current state of the consensus mechanism.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ConsensusState {
-    /// Current height of the blockchain.
-    current_height: u64,
-
-    /// Current set of validators.
+    /// The current set of validators.
     validators: ValidatorSet,
 
-    /// Map of validator stakes.
+    /// Current stake information.
     stake_manager: StakeManager,
 
-    /// The last finalized block in the chain.
-    last_finalized_block: Block,
+    /// The current highest block that has reached consensus.
+    current_block: BlockProposal,
 
-    /// Tracks the current round of consensus.
-    current_round: u64,
+    /// Mapping of validator IDs to their last agreed block.
+    validator_block_map: HashMap<String, BlockProposal>,
 
-    /// Current leader or proposer in the consensus process.
-    current_leader: String,
+    /// Timestamp of the last state update.
+    last_updated: u64,
 }
 
 impl ConsensusState {
-    /// Creates a new consensus state.
-    pub fn new() -> ConsensusState {
+    /// Initializes a new ConsensusState with the given components.
+    pub fn new(validators: ValidatorSet, stake_manager: StakeManager, initial_block: BlockProposal) -> Self {
         ConsensusState {
-            current_height: 0,
-            validators: ValidatorSet::new(),
-            stake_manager: StakeManager::new(),
-            last_finalized_block: Block::default(),
-            current_round: 0,
-            current_leader: String::new(),
+            validators,
+            stake_manager,
+            current_block: initial_block,
+            validator_block_map: HashMap::new(),
+            last_updated: get_current_timestamp(),
         }
     }
 
-    /// Updates the state with a new block.
-    pub fn update_with_block(&mut self, block: &Block) {
-        self.last_finalized_block = block.clone();
-        self.current_height = block.height;
-        self.update_round_and_leader();
+    /// Updates the state based on a new block proposal.
+    /// This function is called when a new block is proposed by a validator.
+    pub fn update_state_with_block(&mut self, block: BlockProposal) {
+        // Check if the block is valid and can be added to the blockchain
+        if self.is_block_valid(&block) {
+            self.current_block = block.clone();
+            self.validator_block_map.insert(block.proposer_id.clone(), block);
+
+            // Update the stake manager with any stake changes in the new block
+            self.stake_manager.update_stakes(&block);
+
+            // Update the timestamp
+            self.last_updated = get_current_timestamp();
+
+            // TODO: Add logic for handling block rewards and penalties.
+        }
     }
 
-    /// Updates the current round and leader based on the latest block.
-    fn update_round_and_leader(&mut self) {
-        self.current_round += 1;
-        self.current_leader = self.select_new_leader();
+    /// Validates whether the proposed block can be added to the blockchain.
+    fn is_block_valid(&self, block: &BlockProposal) -> bool {
+        // TODO: Implement block validation logic, including signature verification,
+        //       transaction validity, and consensus rules.
+
+        // Placeholder logic for illustration
+        block.transactions.iter().all(|tx| tx.is_valid())
     }
 
-    /// Selects a new leader for the next round of consensus.
-    fn select_new_leader(&self) -> String {
-        let leader = self.validators.get_next_leader();
-        leader
+    /// Returns the current highest block in the consensus state.
+    pub fn get_current_block(&self) -> &BlockProposal {
+        &self.current_block
     }
 
-    /// Returns the current height of the blockchain.
-    pub fn get_current_height(&self) -> u64 {
-        self.current_height
-    }
+    // TODO: Implement additional functionalities as needed, such as state recovery,
+    //       fork resolution, and validator set updates.
 
-    /// Returns the current consensus round.
-    pub fn get_current_round(&self) -> u64 {
-        self.current_round
-    }
-
-    /// Returns the current leader.
-    pub fn get_current_leader(&self) -> &str {
-        &self.current_leader
-    }
-
+    // TODO: Integrate network communication mechanisms to propagate state changes
+    //       to other nodes in the network.
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Returns the current timestamp.
+/// This is a utility function for getting the current time in a format suitable for the blockchain.
+fn get_current_timestamp() -> u64 {
+    // TODO: Implement a more robust and accurate time-fetching mechanism, possibly synchronized with network time.
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    #[test]
-    fn test_initial_state() {
-        let state = ConsensusState::new();
-        assert_eq!(state.get_current_height(), 0);
-        assert_eq!(state.get_current_round(), 0);
-        assert!(state.get_current_leader().is_empty());
-    }
-
+    let start = SystemTime::now();
+    start.duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs()
 }
